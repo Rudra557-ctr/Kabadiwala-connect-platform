@@ -25,6 +25,7 @@ import { estimateCriticalMinerals, MATERIALS, CRITICAL_MINERALS } from '../src/l
 import { rankRecyclers, compareRoutes } from '../src/lib/matching';
 import { missingTranslations } from '../src/lib/i18n';
 import { estimateEpr, COLLECTOR_SHARE } from '../src/lib/epr';
+import { runModel, earningsBand, breakEvenLotKg, guessCount, ASSUMPTIONS } from '../src/lib/economics';
 import { seedRecyclers, seedPricePoints, DEMO_CITY } from '../src/lib/seed';
 
 let failures = 0;
@@ -155,6 +156,36 @@ check(
   `${Math.round(COLLECTOR_SHARE * 100)}%`,
 );
 check('rate is disclosed for the UI to print', eprFormal.ratePerKg > 0, `₹${eprFormal.ratePerKg}/kg`);
+
+console.log('\n— unit economics —');
+
+const uecon = runModel();
+const uband = earningsBand();
+
+// Sanity floor/ceiling. Published informal-sector work puts daily earnings in
+// the low hundreds of rupees; a model returning thousands is wrong.
+check(
+  'informal earnings plausible (Rs 150-900/day)',
+  uecon.informal.netPerDay >= 150 && uecon.informal.netPerDay <= 900,
+  `Rs ${uecon.informal.netPerDay}/day`,
+);
+check('formal route beats informal in the mid case', uecon.gainPerDay > 0, `+Rs ${uecon.gainPerDay}/day`);
+check(
+  'reported as a BAND, not a point',
+  uband.gainPct[0] !== uband.gainPct[1],
+  `${uband.gainPct[0]}% to ${uband.gainPct[1]}%`,
+);
+// The pessimistic case SHOULD be able to go negative. A model where formal
+// always wins is not modelling transport honestly.
+check(
+  'pessimistic case can lose money (transport is real)',
+  runModel('low').formal.netPerDay < uecon.formal.netPerDay,
+  `worst Rs ${runModel('low').formal.netPerDay}/day`,
+);
+const be = breakEvenLotKg();
+check('break-even lot size computed', be !== null, be === null ? 'formal always wins' : `${be} kg`);
+console.log(`\n  NOTE: ${guessCount()} of ${Object.keys(ASSUMPTIONS).length} economic assumptions are still guesses.`);
+console.log('  Fill FIELD-RESEARCH.md and raise their confidence before quoting any figure.');
 
 console.log('\n— translations —');
 
