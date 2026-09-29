@@ -1,0 +1,214 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  /* Default = business register (recycler, ministry): cool, calm, dense. */
+  :root {
+    --bg: 246 248 250;
+    --fg: 28 32 40;
+    --card: 255 255 255;
+    --muted: 101 118 141;
+    --border: 213 219 227;
+    --accent: 13 124 85;
+    --radius: 0.875rem;
+  }
+
+  /* Collector register: warmer paper, rounder, friendlier. The audience works
+     outdoors and may not read — warmth and boldness matter more than polish. */
+  [data-surface='collector'] {
+    --bg: 250 249 246;
+    --fg: 26 28 30;
+    --card: 255 255 255;
+    --muted: 112 112 106;
+    --border: 226 223 214;
+    --accent: 13 124 85;
+    --radius: 1.125rem;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme='light']) {
+      --bg: 16 19 24;
+      --fg: 234 239 245;
+      --card: 26 31 38;
+      --muted: 143 157 175;
+      --border: 45 53 65;
+    }
+    :root:not([data-theme='light']) [data-surface='collector'] {
+      --bg: 20 20 18;
+      --fg: 240 238 233;
+      --card: 31 31 28;
+      --muted: 158 155 146;
+      --border: 56 55 50;
+    }
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  /* The app keeps the system stack for UI chrome: it is the fastest to paint on
+     a cheap phone and collectors never see the landing page. The landing page
+     opts into real typefaces via .site below. */
+  body {
+    background-color: rgb(var(--bg));
+    color: rgb(var(--fg));
+    font-family: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto,
+      'Noto Sans Devanagari', 'Noto Sans', sans-serif;
+    -webkit-font-smoothing: antialiased;
+    overscroll-behavior-y: contain;
+  }
+
+  /* Devanagari needs more vertical room than Latin at the same size or matras
+     and conjuncts clip. */
+  :lang(hi) body,
+  :lang(mr) body {
+    line-height: 1.7;
+  }
+
+  :focus-visible {
+    outline: 2.5px solid rgb(var(--accent));
+    outline-offset: 2px;
+    border-radius: 0.6rem;
+  }
+}
+
+@layer components {
+  /* Landing-page typography scope. Applied on the marketing container only, so
+     the app's fast system stack is untouched. */
+  .site {
+    font-family: var(--font-sans), ui-sans-serif, sans-serif;
+  }
+
+  /* Devanagari face applies ONLY to explicitly marked content.
+     `:lang(mr)` looked right but matches every descendant of <html lang="mr">,
+     and (0,2,0) specificity beat the `.site h1` rule — so the entire English
+     landing page rendered in the Devanagari face. Marking content explicitly
+     is both correct and narrower. */
+  .deva,
+  [lang='mr'],
+  [lang='hi'] {
+    font-family: var(--font-deva), sans-serif;
+  }
+
+  .site h1,
+  .site h2,
+  .site .display-face {
+    font-family: var(--font-display), Georgia, serif;
+    font-weight: 400;
+    letter-spacing: -0.015em;
+  }
+
+  /* Skip link — first in tab order, invisible until focused. */
+  .skip {
+    @apply absolute left-4 top-4 z-[100] -translate-y-20 rounded-lg px-4 py-2 text-sm font-bold;
+    background: rgb(var(--accent));
+    color: #fff;
+    transition: transform 150ms ease-out;
+  }
+  .skip:focus {
+    @apply translate-y-0;
+  }
+
+  .card {
+    @apply border p-4 shadow-e1;
+    border-radius: var(--radius);
+    background-color: rgb(var(--card));
+    border-color: rgb(var(--border));
+  }
+
+  .card-interactive {
+    @apply card transition-all duration-200 ease-out;
+    @apply hover:-translate-y-px hover:shadow-e2 active:translate-y-0 active:scale-[0.99];
+  }
+
+  /* Every interactive element clears 48dp: calloused hands, often gloved. */
+  .tap {
+    @apply min-h-touch min-w-touch inline-flex items-center justify-center gap-2 px-4 font-semibold;
+    @apply transition-all duration-150 ease-out active:scale-[0.97];
+    border-radius: calc(var(--radius) - 0.25rem);
+  }
+
+  .tap-primary {
+    @apply tap text-white shadow-e2;
+    background-color: rgb(var(--accent));
+    @apply hover:brightness-110 active:brightness-95;
+  }
+
+  .tap-ghost {
+    @apply tap border bg-transparent;
+    border-color: rgb(var(--border));
+    @apply hover:bg-black/[0.035];
+  }
+
+  .muted {
+    color: rgb(var(--muted));
+  }
+
+  /* The ONE saturated block on a screen. Used sparingly and deliberately:
+     when every card was a gradient, nothing read as important. */
+  .hero {
+    @apply relative overflow-hidden text-white;
+    border-radius: calc(var(--radius) + 0.35rem);
+  }
+
+  .hero::after {
+    content: '';
+    @apply pointer-events-none absolute inset-0 bg-dots bg-dots opacity-50;
+  }
+
+  .hero > * {
+    @apply relative z-10;
+  }
+
+  /* Small coloured square behind an icon. Carries category/meaning without
+     flooding the card with colour. */
+  .chip-icon {
+    @apply inline-flex shrink-0 items-center justify-center;
+    border-radius: calc(var(--radius) - 0.3rem);
+  }
+
+  .skeleton {
+    @apply relative overflow-hidden;
+    border-radius: calc(var(--radius) - 0.25rem);
+    background-color: rgb(var(--border) / 0.6);
+  }
+
+  .skeleton::after {
+    content: '';
+    @apply absolute inset-0 animate-shimmer;
+    background-image: linear-gradient(90deg, transparent, rgb(255 255 255 / 0.3), transparent);
+  }
+
+  .stagger {
+    animation: fade-up 340ms cubic-bezier(0.22, 1, 0.36, 1) both;
+    animation-delay: calc(var(--i, 0) * 40ms);
+  }
+
+  /* Section label — small caps, used to break up dense business screens. */
+  .eyebrow {
+    @apply text-[11px] font-bold uppercase tracking-[0.14em];
+    color: rgb(var(--muted));
+  }
+}
+
+@layer utilities {
+  .tnum {
+    font-variant-numeric: tabular-nums;
+  }
+
+  .display {
+    letter-spacing: -0.022em;
+    font-weight: 800;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
